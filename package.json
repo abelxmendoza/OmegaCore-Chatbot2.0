@@ -92,11 +92,11 @@
     "tailwindcss-animate": "^1.0.7",
     "tiktoken": "^1.0.21",
     "usehooks-ts": "^3.1.0",
-    "zod": "^4.1.12"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@playwright/test": "^1.50.1",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.15",
     "@types/d3-scale": "^4.0.8",
     "@types/node": "^22.8.6",
