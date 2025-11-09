@@ -9,7 +9,11 @@ config({
 
 const runMigrate = async () => {
   if (!process.env.POSTGRES_URL) {
-    throw new Error('POSTGRES_URL is not defined');
+    // Skip migrations during build if POSTGRES_URL is not available
+    // Migrations will run at runtime when the database is available
+    console.log('⏭️  Skipping migrations: POSTGRES_URL is not defined');
+    console.log('   Migrations will run at runtime when database is available');
+    process.exit(0);
   }
 
   const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
