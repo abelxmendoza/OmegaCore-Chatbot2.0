@@ -6,7 +6,7 @@
   "author": "abelxmendoza",
   "repository": {
     "type": "git",
-    "url": "https://github.com/abelxmendoza/OmegaCore-chatbotUi"
+    "url": "https://github.com/abelxmendoza/OmegaCore-Chatbot2.0"
   },
   "scripts": {
     "dev": "next dev --turbo",

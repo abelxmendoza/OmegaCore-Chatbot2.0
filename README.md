@@ -48,8 +48,8 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/abelxmendoza/OmegaCore-chatbotUi.git
-   cd OmegaCore-chatbotUi
+   git clone https://github.com/abelxmendoza/OmegaCore-Chatbot2.0.git
+   cd OmegaCore-Chatbot2.0
    ```
 
 2. **Install dependencies**
