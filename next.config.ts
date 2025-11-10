@@ -22,9 +22,10 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
+              "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              "font-src 'self' data: https://cdn.jsdelivr.net",
+              "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
               "connect-src 'self' https://api.openai.com https://api.x.ai https://api.anthropic.com https://*.vercel.app",
             ].join('; '),
           },

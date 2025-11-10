@@ -6,6 +6,24 @@ import { createGuestUser, getUser } from '@/lib/db/queries';
 import { DUMMY_PASSWORD } from '@/lib/constants';
 import { compare } from 'bcryptjs';
 
+// Get base URL for NextAuth - required for SSR
+const getBaseUrl = () => {
+  // In production/Vercel, trustHost will handle this
+  if (process.env.VERCEL || process.env.VERCEL_URL) {
+    return undefined; // Let trustHost handle it
+  }
+  // For local development, ensure we have a valid URL
+  const url = process.env.NEXTAUTH_URL || process.env.AUTH_URL || 'http://localhost:3000';
+  // Validate it's a proper URL
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    console.warn('[Auth Config] Invalid NEXTAUTH_URL, using default');
+    return 'http://localhost:3000';
+  }
+};
+
 export const authConfig = {
   // Required for encryption/signing
   // NextAuth v5 prefers AUTH_SECRET, but also supports NEXTAUTH_SECRET
@@ -15,6 +33,12 @@ export const authConfig = {
   // This makes NextAuth use the request origin instead of NEXTAUTH_URL
   // For local development, NEXTAUTH_URL should be set in .env.local
   trustHost: true,
+  
+  // Explicitly set base URL for local development (helps with SSR)
+  // In production, this is ignored in favor of trustHost
+  ...(process.env.NODE_ENV === 'development' && !process.env.VERCEL
+    ? { baseURL: getBaseUrl() }
+    : {}),
 
   // Override base URL to use request origin (prevents localhost redirects)
   // If NEXTAUTH_URL is set to localhost, this ensures we use the actual request origin
