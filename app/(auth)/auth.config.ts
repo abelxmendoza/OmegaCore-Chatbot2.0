@@ -8,7 +8,8 @@ import { compare } from 'bcryptjs';
 
 export const authConfig = {
   // Required for encryption/signing
-  secret: process.env.NEXTAUTH_SECRET,
+  // NextAuth v5 prefers AUTH_SECRET, but also supports NEXTAUTH_SECRET
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 
   // Optional: helpful for debugging in dev
   debug: process.env.NODE_ENV === 'development',

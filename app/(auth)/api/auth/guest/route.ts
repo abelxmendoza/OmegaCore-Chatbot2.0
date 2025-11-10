@@ -10,10 +10,20 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const redirectUrl = url.searchParams.get('redirectUrl') || '/';
 
+  // Check if auth secret is configured
+  const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!authSecret) {
+    console.error('[Guest Auth Error] AUTH_SECRET or NEXTAUTH_SECRET is not defined');
+    return new Response(
+      'Server configuration error: AUTH_SECRET is not set. Please configure it in Vercel environment variables.',
+      { status: 500 }
+    );
+  }
+
   // Check if user already has a token/session
   const token = await getToken({
     req: request,
-    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    secret: authSecret,
     secureCookie: !isDevelopmentEnvironment,
   });
 
