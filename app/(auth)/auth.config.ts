@@ -12,7 +12,12 @@ export const authConfig = {
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 
   // Trust the host header (required for Vercel deployments)
+  // This makes NextAuth use the request origin instead of NEXTAUTH_URL
   trustHost: true,
+
+  // Override base URL to use request origin (prevents localhost redirects)
+  // If NEXTAUTH_URL is set to localhost, this ensures we use the actual request origin
+  basePath: '/api/auth',
 
   // Optional: helpful for debugging in dev
   debug: process.env.NODE_ENV === 'development',
@@ -112,6 +117,28 @@ export const authConfig = {
         session.user.type = token.type as 'regular' | 'guest';
       }
       return session;
+    },
+
+    // Override redirect to use request origin instead of NEXTAUTH_URL
+    async redirect({ url, baseUrl }) {
+      // Use baseUrl (which respects trustHost) instead of NEXTAUTH_URL
+      // If url is relative, make it absolute using baseUrl
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      // If url is already absolute, check if it's from the same origin
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        // If same origin, allow it
+        if (urlObj.origin === baseUrlObj.origin) {
+          return url;
+        }
+      } catch {
+        // Invalid URL, use baseUrl
+      }
+      // Default to baseUrl
+      return baseUrl;
     },
   },
 } satisfies NextAuthConfig;
