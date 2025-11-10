@@ -120,12 +120,32 @@ export const authConfig = {
     },
 
     // Override redirect to use request origin instead of NEXTAUTH_URL
+    // This prevents localhost redirects when NEXTAUTH_URL is set incorrectly
     async redirect({ url, baseUrl }) {
+      // CRITICAL: Always reject localhost URLs, even if they match baseUrl
+      // This prevents redirects to localhost when NEXTAUTH_URL is misconfigured
+      if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        console.warn('[Auth Redirect] Rejecting localhost URL:', url);
+        // If it's a relative path, use baseUrl
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        // If it's absolute localhost, extract the path and use baseUrl
+        try {
+          const urlObj = new URL(url);
+          return `${baseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+        } catch {
+          // Invalid URL, use baseUrl
+        }
+        return baseUrl;
+      }
+
       // Use baseUrl (which respects trustHost) instead of NEXTAUTH_URL
       // If url is relative, make it absolute using baseUrl
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
       }
+      
       // If url is already absolute, check if it's from the same origin
       try {
         const urlObj = new URL(url);
@@ -134,6 +154,8 @@ export const authConfig = {
         if (urlObj.origin === baseUrlObj.origin) {
           return url;
         }
+        // Different origin - extract path and use baseUrl
+        return `${baseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
       } catch {
         // Invalid URL, use baseUrl
       }
