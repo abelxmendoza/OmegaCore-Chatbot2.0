@@ -123,45 +123,62 @@ export const authConfig = {
     // Override redirect to use request origin instead of NEXTAUTH_URL
     // This prevents localhost redirects when NEXTAUTH_URL is set incorrectly
     async redirect({ url, baseUrl }) {
-      // CRITICAL: Always reject localhost URLs, even if they match baseUrl
-      // This prevents redirects to localhost when NEXTAUTH_URL is misconfigured
-      if (url.includes('localhost') || url.includes('127.0.0.1')) {
-        console.warn('[Auth Redirect] Rejecting localhost URL:', url);
-        // If it's a relative path, use baseUrl
-        if (url.startsWith('/')) {
-          return `${baseUrl}${url}`;
-        }
-        // If it's absolute localhost, extract the path and use baseUrl
-        try {
-          const urlObj = new URL(url);
-          return `${baseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
-        } catch {
-          // Invalid URL, use baseUrl
-        }
-        return baseUrl;
+      // Ensure baseUrl is valid - fallback to NEXTAUTH_URL if baseUrl is invalid
+      let validBaseUrl = baseUrl;
+      if (!baseUrl || typeof baseUrl !== 'string') {
+        validBaseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || 'http://localhost:3000';
+        console.warn('[Auth Redirect] Invalid baseUrl, using fallback:', validBaseUrl);
       }
 
-      // Use baseUrl (which respects trustHost) instead of NEXTAUTH_URL
-      // If url is relative, make it absolute using baseUrl
+      // Validate baseUrl is a proper URL
+      try {
+        new URL(validBaseUrl);
+      } catch {
+        // If baseUrl is invalid, use NEXTAUTH_URL or default
+        validBaseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        console.warn('[Auth Redirect] baseUrl validation failed, using:', validBaseUrl);
+      }
+
+      // CRITICAL: Always reject localhost URLs in production (when not on localhost)
+      // This prevents redirects to localhost when NEXTAUTH_URL is misconfigured
+      const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+      
+      if (isLocalhost && isProduction && !validBaseUrl.includes('localhost')) {
+        console.warn('[Auth Redirect] Rejecting localhost URL in production:', url);
+        // Extract path and use validBaseUrl
+        if (url.startsWith('/')) {
+          return `${validBaseUrl}${url}`;
+        }
+        try {
+          const urlObj = new URL(url);
+          return `${validBaseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+        } catch {
+          return validBaseUrl;
+        }
+      }
+
+      // Use validBaseUrl (which respects trustHost) instead of NEXTAUTH_URL
+      // If url is relative, make it absolute using validBaseUrl
       if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
+        return `${validBaseUrl}${url}`;
       }
       
       // If url is already absolute, check if it's from the same origin
       try {
         const urlObj = new URL(url);
-        const baseUrlObj = new URL(baseUrl);
+        const baseUrlObj = new URL(validBaseUrl);
         // If same origin, allow it
         if (urlObj.origin === baseUrlObj.origin) {
           return url;
         }
-        // Different origin - extract path and use baseUrl
-        return `${baseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
-      } catch {
-        // Invalid URL, use baseUrl
+        // Different origin - extract path and use validBaseUrl
+        return `${validBaseUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+      } catch (err) {
+        // Invalid URL, use validBaseUrl
+        console.warn('[Auth Redirect] URL parsing error:', err);
+        return validBaseUrl;
       }
-      // Default to baseUrl
-      return baseUrl;
     },
   },
 } satisfies NextAuthConfig;
