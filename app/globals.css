@@ -31,6 +31,23 @@
     }
 }
 
+/* Command Palette Styling */
+[cmdk-root] {
+    @apply dark:bg-[#0a0a0f] bg-background;
+}
+
+[cmdk-input] {
+    @apply dark:text-white text-foreground;
+}
+
+[cmdk-item] {
+    @apply dark:hover:bg-purple-500/20 dark:data-[selected]:bg-purple-500/30;
+}
+
+[cmdk-group-heading] {
+    @apply dark:text-purple-400 text-muted-foreground text-xs font-semibold px-2 py-1.5;
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;

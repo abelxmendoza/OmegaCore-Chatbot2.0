@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10');
   const startingAfter = searchParams.get('starting_after');
   const endingBefore = searchParams.get('ending_before');
+  const search = searchParams.get('search'); // New search parameter
 
   if (startingAfter && endingBefore) {
     return Response.json(
@@ -25,12 +26,26 @@ export async function GET(request: NextRequest) {
   try {
     const chats = await getChatsByUserId({
       id: session.user.id,
-      limit,
+      limit: search ? 100 : limit, // Get more results when searching
       startingAfter,
       endingBefore,
     });
 
-    return Response.json(chats);
+    // Filter by search term if provided
+    let filteredChats = chats.chats;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredChats = chats.chats.filter((chat) =>
+        chat.title.toLowerCase().includes(searchLower)
+      );
+      // Limit search results
+      filteredChats = filteredChats.slice(0, limit);
+    }
+
+    return Response.json({
+      chats: filteredChats,
+      hasMore: search ? false : chats.hasMore, // Don't paginate search results
+    });
   } catch (_) {
     return Response.json('Failed to fetch chats!', { status: 500 });
   }
