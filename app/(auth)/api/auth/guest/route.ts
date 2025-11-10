@@ -8,7 +8,13 @@ import { signIn } from '@/app/(auth)/auth';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const redirectUrl = url.searchParams.get('redirectUrl') || '/';
+  const requestOrigin = url.origin; // Use the actual request origin (Vercel domain or localhost)
+  const redirectPath = url.searchParams.get('redirectUrl') || '/';
+  
+  // Ensure redirectUrl uses the request origin, not localhost
+  const redirectUrl = redirectPath.startsWith('http') 
+    ? redirectPath 
+    : `${requestOrigin}${redirectPath}`;
 
   // Check if auth secret is configured
   const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
@@ -28,8 +34,8 @@ export async function GET(request: Request) {
   });
 
   if (token) {
-    // Already signed in — redirect to homepage or dashboard
-    return NextResponse.redirect(new URL('/', request.url));
+    // Already signed in — redirect to homepage or dashboard using request origin
+    return NextResponse.redirect(new URL('/', requestOrigin));
   }
 
   // Note: Guest login will work without database (using temporary sessions)
@@ -37,6 +43,7 @@ export async function GET(request: Request) {
   
   try {
     // Initiate guest sign-in via next-auth (this throws NEXT_REDIRECT internally)
+    // Use the redirectUrl with the correct origin
     return await signIn('guest', {
       redirectTo: redirectUrl,
       // Note: `redirect: true` is default on server, so not needed
