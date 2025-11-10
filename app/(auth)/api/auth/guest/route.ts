@@ -22,6 +22,15 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  // Check if database is available
+  if (!process.env.POSTGRES_URL) {
+    console.error('[Guest Auth Error] POSTGRES_URL is not defined');
+    return new Response(
+      'Database not configured. Please set POSTGRES_URL environment variable.',
+      { status: 503 }
+    );
+  }
+
   try {
     // Initiate guest sign-in via next-auth (this throws NEXT_REDIRECT internally)
     return await signIn('guest', {
@@ -29,7 +38,17 @@ export async function GET(request: Request) {
       // Note: `redirect: true` is default on server, so not needed
     });
   } catch (err: any) {
+    // NextAuth's signIn throws NEXT_REDIRECT internally, which is expected
+    // If it's a redirect, re-throw it
+    if (err?.type === 'NEXT_REDIRECT' || err?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw err;
+    }
+    
     console.error('[Guest Auth Error]', err);
-    return new Response('Guest login not supported.', { status: 401 });
+    console.error('[Guest Auth Error] Stack:', err?.stack);
+    return new Response(
+      `Guest login failed: ${err?.message || 'Unknown error'}. Please check server logs.`,
+      { status: 500 }
+    );
   }
 }

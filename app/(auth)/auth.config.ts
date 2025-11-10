@@ -57,8 +57,17 @@ export const authConfig = {
       name: 'Guest',
       credentials: {},
       async authorize() {
-        const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: 'guest' };
+        try {
+          if (!process.env.POSTGRES_URL) {
+            console.error('[Guest Auth] POSTGRES_URL is not defined');
+            throw new Error('Database not configured');
+          }
+          const [guestUser] = await createGuestUser();
+          return { ...guestUser, type: 'guest' };
+        } catch (error) {
+          console.error('[Guest Auth] Failed to create guest user:', error);
+          throw error;
+        }
       },
     }),
   ],
