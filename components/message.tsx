@@ -222,6 +222,8 @@ const PurePreviewMessage = ({
                 message={message}
                 vote={vote}
                 isLoading={isLoading}
+                reload={reload}
+                setMessages={setMessages}
               />
             )}
           </div>
