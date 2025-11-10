@@ -49,33 +49,48 @@ export async function POST(request: Request) {
       return new Response('Unauthorized', { status: 401 });
     }
 
+    // Check if database is available
+    const hasDatabase = !!process.env.POSTGRES_URL;
+    
+    if (!hasDatabase) {
+      console.warn('[Chat API] POSTGRES_URL not set - chat history will not be saved');
+    }
+
     const userType: UserType = session.user.type as UserType;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id as string,
-      differenceInHours: 24,
-    });
+    // Skip rate limiting and chat persistence if no database
+    let previousMessages: Array<DBMessage> = [];
+    if (hasDatabase) {
+      try {
+        const messageCount = await getMessageCountByUserId({
+          id: session.user.id as string,
+          differenceInHours: 24,
+        });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new Response(
-        'You have exceeded your maximum number of messages for the day! Please try again later.',
-        { status: 429 },
-      );
-    }
+        if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+          return new Response(
+            'You have exceeded your maximum number of messages for the day! Please try again later.',
+            { status: 429 },
+          );
+        }
 
-    const chat = await getChatById({ id });
+        const chat = await getChatById({ id });
 
-    if (!chat) {
-      const title = await generateTitleFromUserMessage({ message });
-      console.log('[CREATE CHAT]', id, title);
-      await saveChat({ id, userId: session.user.id as string, title });
-    } else {
-      if (chat.userId !== (session.user.id as string)) {
-        return new Response('Forbidden', { status: 403 });
+        if (!chat) {
+          const title = await generateTitleFromUserMessage({ message });
+          console.log('[CREATE CHAT]', id, title);
+          await saveChat({ id, userId: session.user.id as string, title });
+        } else {
+          if (chat.userId !== (session.user.id as string)) {
+            return new Response('Forbidden', { status: 403 });
+          }
+        }
+
+        previousMessages = await getMessagesByChatId({ id });
+      } catch (error) {
+        console.error('[Chat API] Database error, continuing without persistence:', error);
       }
     }
-
-    const previousMessages = await getMessagesByChatId({ id });
 
     const messages = appendClientMessage({
       // @ts-expect-error: todo add type conversion from DBMessage[] to UIMessage[]
@@ -93,18 +108,25 @@ export async function POST(request: Request) {
       country: (country ?? '') as RequestHints['country'],
     };
 
-    await saveMessages({
-      messages: [
-        {
-          chatId: id,
-          id: message.id,
-          role: 'user',
-          parts: message.parts,
-          attachments: message.experimental_attachments ?? [],
-          createdAt: new Date(),
-        },
-      ],
-    });
+    // Only save user message if database is available
+    if (hasDatabase) {
+      try {
+        await saveMessages({
+          messages: [
+            {
+              chatId: id,
+              id: message.id,
+              role: 'user',
+              parts: message.parts,
+              attachments: message.experimental_attachments ?? [],
+              createdAt: new Date(),
+            },
+          ],
+        });
+      } catch (error) {
+        console.error('[Chat API] Failed to save user message:', error);
+      }
+    }
 
     return createDataStreamResponse({
       execute: (dataStream) => {
@@ -126,7 +148,7 @@ export async function POST(request: Request) {
             requestSuggestions: requestSuggestions({ session, dataStream }),
           },
           onFinish: async ({ response }) => {
-            if (session.user?.id) {
+            if (session.user?.id && hasDatabase) {
               try {
                 const assistantId = getTrailingMessageId({
                   messages: response.messages.filter(
@@ -194,6 +216,11 @@ export async function DELETE(request: Request) {
 
   if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  // Check if database is available
+  if (!process.env.POSTGRES_URL) {
+    return new Response('Database not configured', { status: 503 });
   }
 
   try {

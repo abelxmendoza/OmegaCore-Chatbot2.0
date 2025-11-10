@@ -22,15 +22,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // Check if database is available
-  if (!process.env.POSTGRES_URL) {
-    console.error('[Guest Auth Error] POSTGRES_URL is not defined');
-    return new Response(
-      'Database not configured. Please set POSTGRES_URL environment variable.',
-      { status: 503 }
-    );
-  }
-
+  // Note: Guest login will work without database (using temporary sessions)
+  // but chat history won't be persisted without POSTGRES_URL
+  
   try {
     // Initiate guest sign-in via next-auth (this throws NEXT_REDIRECT internally)
     return await signIn('guest', {

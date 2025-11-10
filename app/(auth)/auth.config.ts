@@ -57,16 +57,35 @@ export const authConfig = {
       name: 'Guest',
       credentials: {},
       async authorize() {
+        // If database is not available, create a temporary guest user in memory
+        if (!process.env.POSTGRES_URL) {
+          console.warn('[Guest Auth] POSTGRES_URL not set - using temporary guest session');
+          // Generate a temporary guest ID
+          const guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+          const guestEmail = `guest-${guestId}@temp.local`;
+          
+          return {
+            id: guestId,
+            email: guestEmail,
+            type: 'guest' as const,
+          };
+        }
+        
         try {
-          if (!process.env.POSTGRES_URL) {
-            console.error('[Guest Auth] POSTGRES_URL is not defined');
-            throw new Error('Database not configured');
-          }
           const [guestUser] = await createGuestUser();
           return { ...guestUser, type: 'guest' };
         } catch (error) {
-          console.error('[Guest Auth] Failed to create guest user:', error);
-          throw error;
+          console.error('[Guest Auth] Failed to create guest user in database:', error);
+          // Fallback to temporary guest if database fails
+          console.warn('[Guest Auth] Falling back to temporary guest session');
+          const guestId = `guest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+          const guestEmail = `guest-${guestId}@temp.local`;
+          
+          return {
+            id: guestId,
+            email: guestEmail,
+            type: 'guest' as const,
+          };
         }
       },
     }),
