@@ -34,8 +34,13 @@ export async function GET(request: Request) {
   });
 
   if (token) {
-    // Already signed in — redirect to homepage or dashboard using request origin
-    return NextResponse.redirect(new URL('/', requestOrigin));
+    // Already signed in — redirect to the requested path or chat
+    const finalRedirect = redirectPath.startsWith('http') 
+      ? redirectPath 
+      : redirectPath === '/' 
+        ? `${requestOrigin}/chat`
+        : `${requestOrigin}${redirectPath}`;
+    return NextResponse.redirect(new URL(finalRedirect, requestOrigin));
   }
 
   // Note: Guest login will work without database (using temporary sessions)
