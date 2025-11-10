@@ -16,6 +16,7 @@ import {
   saveChat,
   saveMessages,
 } from '@/lib/db/queries';
+import type { DBMessage } from '@/lib/db/schema';
 import { generateUUID, getTrailingMessageId } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
