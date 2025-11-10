@@ -1,10 +1,12 @@
 import type { Message } from 'ai';
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
+import type { UseChatHelpers } from '@ai-sdk/react';
 
 import type { Vote } from '@/lib/db/schema';
 
 import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
+import { RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Tooltip,
@@ -21,17 +23,78 @@ export function PureMessageActions({
   message,
   vote,
   isLoading,
+  reload,
+  setMessages,
 }: {
   chatId: string;
   message: Message;
   vote: Vote | undefined;
   isLoading: boolean;
+  reload?: UseChatHelpers['reload'];
+  setMessages?: UseChatHelpers['setMessages'];
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
 
   if (isLoading) return null;
-  if (message.role === 'user') return null;
+
+  // Extract text content from message parts
+  const getMessageText = () => {
+    if (message.content && typeof message.content === 'string') {
+      return message.content;
+    }
+    return message.parts
+      ?.filter((part) => part.type === 'text')
+      .map((part) => part.text)
+      .join('\n')
+      .trim() || '';
+  };
+
+  const handleCopy = async () => {
+    const text = getMessageText();
+
+    if (!text) {
+      toast.error("There's no text to copy!");
+      return;
+    }
+
+    try {
+      await copyToClipboard(text);
+      toast.success('Copied to clipboard!');
+    } catch (error) {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!reload || !setMessages) {
+      toast.error('Regenerate not available');
+      return;
+    }
+
+    try {
+      // Delete the assistant message and regenerate
+      if (setMessages) {
+        setMessages((messages) => {
+          const messageIndex = messages.findIndex((m) => m.id === message.id);
+          if (messageIndex !== -1) {
+            // Remove this message and all messages after it
+            return messages.slice(0, messageIndex);
+          }
+          return messages;
+        });
+      }
+      
+      // Reload to regenerate
+      if (reload) {
+        reload();
+      }
+      
+      toast.success('Regenerating response...');
+    } catch (error) {
+      toast.error('Failed to regenerate');
+    }
+  };
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -39,29 +102,32 @@ export function PureMessageActions({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              className="py-1 px-2 h-fit text-muted-foreground"
+              className="py-1 px-2 h-fit text-muted-foreground hover:text-foreground"
               variant="outline"
-              onClick={async () => {
-                const textFromParts = message.parts
-                  ?.filter((part) => part.type === 'text')
-                  .map((part) => part.text)
-                  .join('\n')
-                  .trim();
-
-                if (!textFromParts) {
-                  toast.error("There's no text to copy!");
-                  return;
-                }
-
-                await copyToClipboard(textFromParts);
-                toast.success('Copied to clipboard!');
-              }}
+              onClick={handleCopy}
             >
-              <CopyIcon />
+              <CopyIcon size={16} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Copy</TooltipContent>
+          <TooltipContent>Copy message</TooltipContent>
         </Tooltip>
+
+        {/* Regenerate button for assistant messages */}
+        {message.role === 'assistant' && reload && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="py-1 px-2 h-fit text-muted-foreground hover:text-foreground"
+                variant="outline"
+                onClick={handleRegenerate}
+                disabled={isLoading}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Regenerate response</TooltipContent>
+          </Tooltip>
+        )}
 
         <Tooltip>
           <TooltipTrigger asChild>
