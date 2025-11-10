@@ -11,6 +11,9 @@ export const authConfig = {
   // NextAuth v5 prefers AUTH_SECRET, but also supports NEXTAUTH_SECRET
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 
+  // Trust the host header (required for Vercel deployments)
+  trustHost: true,
+
   // Optional: helpful for debugging in dev
   debug: process.env.NODE_ENV === 'development',
 
