@@ -13,6 +13,7 @@ export const authConfig = {
 
   // Trust the host header (required for Vercel deployments)
   // This makes NextAuth use the request origin instead of NEXTAUTH_URL
+  // For local development, NEXTAUTH_URL should be set in .env.local
   trustHost: true,
 
   // Override base URL to use request origin (prevents localhost redirects)
