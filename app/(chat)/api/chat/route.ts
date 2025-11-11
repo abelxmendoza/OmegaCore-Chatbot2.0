@@ -25,6 +25,8 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { calculator } from '@/lib/ai/tools/calculator';
 import { getTime } from '@/lib/ai/tools/get-time';
+import { webBrowser } from '@/lib/ai/tools/web-browser';
+import { shellExec } from '@/lib/ai/tools/shell-exec';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
               ? []
-              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions'],
+              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions', 'webBrowser', 'shellExec'],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
@@ -151,6 +153,8 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
+            webBrowser,
+            shellExec,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id && hasDatabase) {

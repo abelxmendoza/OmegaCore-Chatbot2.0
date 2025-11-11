@@ -18,6 +18,8 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
 - **Chat History**: Persistent conversation history with search and organization
 - **File Uploads**: Support for document analysis and processing
 - **Artifact Generation**: Code, documents, and spreadsheet creation tools
+- **Web Browsing**: Fetch and extract content from web pages for research and information gathering
+- **Shell Execution**: Controlled shell command execution with security safeguards (disabled in production by default)
 
 ### LLM Providers
 
@@ -81,6 +83,11 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
    
    # Vercel Blob Storage (Optional - for file uploads)
    BLOB_READ_WRITE_TOKEN=vercel_blob_...
+   
+   # Shell Execution (Optional - NOT recommended for production)
+   # Set to 'true' to enable shell execution tool in production
+   # WARNING: Only enable if you understand the security implications
+   ENABLE_SHELL_TOOL=false
    ```
 
 4. **Run database migrations**
@@ -195,7 +202,8 @@ pnpm db:studio     # Open Drizzle Studio
 │   ├── ai/                # AI provider configuration
 │   │   ├── providers.ts   # Multi-provider setup
 │   │   ├── models.ts      # Available models
-│   │   └── prompts.ts    # System prompts
+│   │   ├── prompts.ts    # System prompts
+│   │   └── tools/        # AI tools (calculator, weather, web browser, shell, etc.)
 │   └── db/               # Database queries and schema
 └── types/                 # TypeScript type definitions
 ```

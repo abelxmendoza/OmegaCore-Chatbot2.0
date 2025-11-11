@@ -67,7 +67,9 @@ This is where you surpass base ChatGPT:
 - ✅ **Document creation** (markdown, code artifacts)
 - ✅ **Weather API** integration
 - ✅ **Suggestion system** for document improvements
-- 🔄 **Future**: Shell execution, web browsing, robotics control
+- ✅ **Web browsing/scraping** (fetch and extract content from web pages)
+- ✅ **Shell execution** (controlled sandbox with security safeguards)
+- 🔄 **Future**: Robotics control, email/calendar integration
 
 ---
 
@@ -180,10 +182,11 @@ Once your base works, fine-tune for:
 - File uploads
 - Database persistence
 - Guest and authenticated users
+- Web browsing/scraping tool
+- Controlled shell execution tool
 
 ### Phase 2: Near Future 🔄
 - Vector database integration
-- Advanced tooling (shell, web browsing)
 - Plugin system
 - Fine-tuning support
 
