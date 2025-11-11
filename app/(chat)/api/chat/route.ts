@@ -27,6 +27,12 @@ import { calculator } from '@/lib/ai/tools/calculator';
 import { getTime } from '@/lib/ai/tools/get-time';
 import { webBrowser } from '@/lib/ai/tools/web-browser';
 import { shellExec } from '@/lib/ai/tools/shell-exec';
+import { createRemember } from '@/lib/ai/tools/remember';
+import { createForget } from '@/lib/ai/tools/forget';
+import { createListMemories } from '@/lib/ai/tools/list-memories';
+import { email, readEmails } from '@/lib/ai/tools/email';
+import { calendar } from '@/lib/ai/tools/calendar';
+import { searchMemories } from '@/lib/db/memory';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -113,6 +119,35 @@ export async function POST(request: Request) {
       country: (country ?? '') as RequestHints['country'],
     };
 
+    // Retrieve relevant memories for context
+    let memoryContext = '';
+    if (hasDatabase && session.user?.id) {
+      try {
+        // Extract text from user message for memory search
+        const userMessageText = typeof message === 'string' 
+          ? message 
+          : message.parts?.map((p: any) => (typeof p === 'string' ? p : p.text || '')).join(' ') || '';
+        
+        if (userMessageText) {
+          const relevantMemories = await searchMemories({
+            userId: session.user.id as string,
+            query: userMessageText,
+            limit: 3,
+            threshold: 0.7,
+          });
+
+          if (relevantMemories.length > 0) {
+            memoryContext = `\n\nRelevant context from memory:\n${relevantMemories
+              .map((m, i) => `${i + 1}. ${m.content}`)
+              .join('\n')}\n`;
+          }
+        }
+      } catch (error) {
+        console.error('[Chat API] Failed to retrieve memories:', error);
+        // Continue without memory context if retrieval fails
+      }
+    }
+
     // Only save user message if database is available
     if (hasDatabase) {
       try {
@@ -135,15 +170,16 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: (dataStream) => {
+        const userId = session.user?.id as string;
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: systemPrompt({ selectedChatModel, requestHints }) + memoryContext,
           messages,
           maxSteps: 5,
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
               ? []
-              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions', 'webBrowser', 'shellExec'],
+              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions', 'webBrowser', 'shellExec', 'remember', 'forget', 'listMemories', 'email', 'readEmails', 'calendar'],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
@@ -155,6 +191,16 @@ export async function POST(request: Request) {
             requestSuggestions: requestSuggestions({ session, dataStream }),
             webBrowser,
             shellExec,
+            ...(hasDatabase && userId
+              ? {
+                  remember: createRemember({ userId }),
+                  forget: createForget({ userId }),
+                  listMemories: createListMemories({ userId }),
+                }
+              : {}),
+            email,
+            readEmails,
+            calendar,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id && hasDatabase) {

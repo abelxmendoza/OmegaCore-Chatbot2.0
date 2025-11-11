@@ -20,6 +20,11 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
 - **Artifact Generation**: Code, documents, and spreadsheet creation tools
 - **Web Browsing**: Fetch and extract content from web pages for research and information gathering
 - **Shell Execution**: Controlled shell command execution with security safeguards (disabled in production by default)
+- **Persistent Memory**: Vector database-powered memory system that remembers context across conversations
+- **Memory Management**: Remember, forget, and search through stored memories
+- **Email Integration**: Send emails directly from the chat interface
+- **Calendar Integration**: Create and manage calendar events
+- **Command Palette**: Quick access to tools and commands (⌘K)
 
 ### LLM Providers
 

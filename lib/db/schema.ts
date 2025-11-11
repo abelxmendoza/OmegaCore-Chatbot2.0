@@ -9,7 +9,23 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  customType,
 } from 'drizzle-orm/pg-core';
+
+// Custom vector type for pgvector
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string): number[] {
+    // Parse PostgreSQL vector format: [1,2,3] or "1,2,3"
+    const cleaned = value.replace(/[\[\]"]/g, '');
+    return cleaned.split(',').map(Number);
+  },
+});
 
 export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -150,3 +166,21 @@ export const suggestion = pgTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+// Vector memory table for persistent AI memory
+export const memory = pgTable('Memory', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  content: text('content').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }), // OpenAI text-embedding-3-small dimensions
+  metadata: json('metadata'),
+  importance: varchar('importance', { enum: ['low', 'medium', 'high'] })
+    .notNull()
+    .default('medium'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Memory = InferSelectModel<typeof memory>;

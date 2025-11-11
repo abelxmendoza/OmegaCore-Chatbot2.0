@@ -22,7 +22,12 @@ import {
   Sparkles,
   Calculator,
   Globe,
-  Clock
+  Clock,
+  Brain,
+  Trash2,
+  List,
+  Mail,
+  Calendar
 } from 'lucide-react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/utils';
@@ -81,16 +86,19 @@ export function CommandPalette({ user }: CommandPaletteProps) {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case 'calculator':
-        // Open calculator tool
         router.push('/chat?query=Calculate:');
         break;
       case 'time':
-        // Ask for current time
         router.push('/chat?query=What time is it?');
         break;
       case 'web':
-        // Web search
         router.push('/chat?query=Search the web for:');
+        break;
+      case 'memories':
+        router.push('/chat?query=listMemories');
+        break;
+      case 'remember':
+        router.push('/chat?query=Remember:');
         break;
       default:
         break;
@@ -150,6 +158,24 @@ export function CommandPalette({ user }: CommandPaletteProps) {
                   <Globe className="h-4 w-4" />
                   <span>Web Search</span>
                 </CommandItem>
+                {user && (
+                  <>
+                    <CommandItem
+                      onSelect={() => handleQuickAction('memories')}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white hover:bg-purple-500/20 hover:text-purple-300 cursor-pointer data-[selected]:bg-purple-500/30 data-[selected]:text-purple-300"
+                    >
+                      <Brain className="h-4 w-4" />
+                      <span>View Memories</span>
+                    </CommandItem>
+                    <CommandItem
+                      onSelect={() => handleQuickAction('remember')}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white hover:bg-purple-500/20 hover:text-purple-300 cursor-pointer data-[selected]:bg-purple-500/30 data-[selected]:text-purple-300"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Remember Something</span>
+                    </CommandItem>
+                  </>
+                )}
               </CommandGroup>
             </>
           )}

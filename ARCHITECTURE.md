@@ -43,7 +43,9 @@ Build persistent context and data recall — what GPT doesn't expose:
 ### Current Implementation
 - ✅ **PostgreSQL** for chat history and user data
 - ✅ **Supabase** integration for scalable storage
-- 🔄 **Future**: Vector database integration for semantic search
+- ✅ **Vector database** (pgvector) for persistent memory and semantic search
+- ✅ **Embedding generation** (OpenAI text-embedding-3-small)
+- ✅ **Memory retrieval** integrated into chat context
 
 ---
 
@@ -69,7 +71,9 @@ This is where you surpass base ChatGPT:
 - ✅ **Suggestion system** for document improvements
 - ✅ **Web browsing/scraping** (fetch and extract content from web pages)
 - ✅ **Shell execution** (controlled sandbox with security safeguards)
-- 🔄 **Future**: Robotics control, email/calendar integration
+- ✅ **Email integration** (send emails, placeholder for reading)
+- ✅ **Calendar integration** (create and manage calendar events)
+- 🔄 **Future**: Robotics control, full email/calendar API integration
 
 ---
 
@@ -184,11 +188,16 @@ Once your base works, fine-tune for:
 - Guest and authenticated users
 - Web browsing/scraping tool
 - Controlled shell execution tool
+- **Persistent memory with vector database** (pgvector)
+- **Memory management tools** (remember, forget, list)
+- **Email integration** (send emails)
+- **Calendar integration** (create/manage events)
+- **Enhanced command palette** (⌘K with memory commands)
 
 ### Phase 2: Near Future 🔄
-- Vector database integration
 - Plugin system
 - Fine-tuning support
+- Full email/calendar API integration (Gmail, Outlook, etc.)
 
 ### Phase 3: Advanced 🎯
 - Local model support (Ollama, etc.)
