@@ -12,8 +12,18 @@ CREATE TABLE IF NOT EXISTS "Memory" (
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
--- Create index for vector similarity search
-CREATE INDEX IF NOT EXISTS "Memory_embedding_idx" ON "Memory" USING ivfflat (embedding vector_cosine_ops);
+-- Create indexes for optimal query performance
+-- Vector similarity search index (IVFFlat for fast approximate search)
+CREATE INDEX IF NOT EXISTS "Memory_embedding_idx" ON "Memory" USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- User ID index for fast filtering
+CREATE INDEX IF NOT EXISTS "Memory_userId_idx" ON "Memory" ("userId");
+
+-- Composite index for user + importance queries
+CREATE INDEX IF NOT EXISTS "Memory_userId_importance_idx" ON "Memory" ("userId", "importance");
+
+-- Timestamp index for chronological queries
+CREATE INDEX IF NOT EXISTS "Memory_createdAt_idx" ON "Memory" ("createdAt" DESC);
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "Memory" ADD CONSTRAINT "Memory_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE no action ON UPDATE no action;

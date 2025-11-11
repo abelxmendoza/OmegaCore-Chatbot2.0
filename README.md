@@ -46,10 +46,13 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+ (ARM64 native for M1 Pro)
 - pnpm (recommended) or npm
-- PostgreSQL database
+- PostgreSQL database (with pgvector extension)
 - API keys for your chosen LLM providers
+
+### 🍎 MacBook M1 Pro Users
+See [M1_PRO_SETUP.md](./M1_PRO_SETUP.md) for optimized setup instructions and one-command installation.
 
 ### Installation
 
@@ -146,14 +149,24 @@ The system prompts are optimized for security research and can be customized in 
 
 ## 📦 Tech Stack
 
-- **Framework**: Next.js 15.3 (App Router)
+- **Framework**: Next.js 15.3 (App Router, Turbo mode)
 - **Language**: TypeScript
 - **AI SDK**: AI SDK v4.3
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM + pgvector
 - **Authentication**: NextAuth.js v5
 - **Styling**: Tailwind CSS with custom cyberpunk theme
 - **UI Components**: Radix UI
 - **Fonts**: JetBrains Mono, Orbitron, Geist
+- **Performance**: LRU Cache, Token Bucket Rate Limiting, Vector Indexing
+
+### 🚀 Performance Optimizations
+- **LRU Cache**: O(1) embedding and query caching
+- **Token Bucket Rate Limiting**: O(1) rate limit checks
+- **Vector Indexing**: O(log n) similarity search with IVFFlat
+- **Batch Processing**: Optimized embedding generation
+- **Database Indexing**: Optimized queries with composite indexes
+
+See [OPTIMIZATION_GUIDE.md](./OPTIMIZATION_GUIDE.md) for detailed performance documentation.
 
 ## 🚢 Deployment
 

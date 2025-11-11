@@ -3,9 +3,22 @@ import 'server-only';
 import { and, desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres, { sql } from 'postgres';
+import crypto from 'crypto';
 
 import { memory, type Memory } from './schema';
 import { generateEmbedding } from '../ai/embeddings';
+import { memoryCache, queryCache } from '@/lib/utils/cache';
+import { memoryRateLimiter } from '@/lib/utils/rate-limiter';
+
+/**
+ * Generate cache key for memory queries
+ */
+function hashQuery(userId: string, query: string, limit: number, threshold: number): string {
+  return crypto
+    .createHash('sha256')
+    .update(`${userId}:${query}:${limit}:${threshold}`)
+    .digest('hex');
+}
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
@@ -64,11 +77,23 @@ export async function searchMemories({
   threshold?: number;
 }): Promise<Array<Memory & { similarity: number }>> {
   try {
-    // Generate embedding for the query
+    // Rate limiting
+    if (!memoryRateLimiter.isAllowed(userId)) {
+      throw new Error('Rate limit exceeded for memory search. Please try again later.');
+    }
+
+    // Check cache first (O(1) lookup)
+    const cacheKey = hashQuery(userId, query, limit, threshold);
+    const cached = queryCache.get(cacheKey);
+    if (cached) {
+      return cached as Array<Memory & { similarity: number }>;
+    }
+
+    // Generate embedding for the query (uses cache internally)
     const queryEmbedding = await generateEmbedding(query);
 
     // Search using cosine similarity with raw SQL
-    // pgvector uses <=> operator for cosine distance
+    // pgvector uses <=> operator for cosine distance (optimized with IVFFlat index)
     const embeddingStr = `[${queryEmbedding.join(',')}]`;
     const results = await client`
       SELECT 
@@ -88,7 +113,12 @@ export async function searchMemories({
       LIMIT ${limit}
     `;
 
-    return results as Array<Memory & { similarity: number }>;
+    const typedResults = results as Array<Memory & { similarity: number }>;
+
+    // Cache the results
+    queryCache.set(cacheKey, typedResults);
+
+    return typedResults;
   } catch (error) {
     console.error('[Memory] Failed to search memories:', error);
     // Fallback to simple text search if vector search fails
