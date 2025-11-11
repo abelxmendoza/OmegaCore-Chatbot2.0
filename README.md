@@ -228,11 +228,18 @@ pnpm db:studio     # Open Drizzle Studio
 
 ## 🔐 Security & Privacy
 
-- All API keys are stored securely as environment variables
-- User authentication via NextAuth.js with JWT sessions
-- Database connections use SSL
-- Guest mode available for anonymous usage
-- Rate limiting per user type
+- **Comprehensive security measures** - See [SECURITY.md](./SECURITY.md) for details
+- **Input validation** - All inputs validated with Zod schemas
+- **Output sanitization** - All outputs sanitized to prevent XSS
+- **Rate limiting** - Token bucket algorithm prevents abuse
+- **Security headers** - CSP, HSTS, X-Frame-Options, and more
+- **Secure cookies** - HttpOnly, Secure, SameSite flags
+- **SQL injection prevention** - Drizzle ORM with parameterized queries
+- **File upload security** - Type validation, magic byte verification, size limits
+- **User data isolation** - Users can only access their own data
+- **API key security** - All keys stored as environment variables (never committed)
+- **Database connections** - SSL required for all connections
+- **Guest mode** - Available for anonymous usage with limited permissions
 
 ## 📝 License
 

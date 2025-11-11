@@ -3,7 +3,7 @@
 import Credentials from 'next-auth/providers/credentials';
 import type { NextAuthConfig } from 'next-auth';
 import { createGuestUser, getUser } from '@/lib/db/queries';
-import { DUMMY_PASSWORD } from '@/lib/constants';
+import { DUMMY_PASSWORD, isDevelopmentEnvironment } from '@/lib/constants';
 import { compare } from 'bcryptjs';
 
 // Get base URL for NextAuth - required for SSR
@@ -50,6 +50,40 @@ export const authConfig = {
   // Required for JWT-based sessions
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
+
+  // Security: Enhanced cookie settings
+  cookies: {
+    sessionToken: {
+      name: `${isDevelopmentEnvironment ? '' : '__Secure-'}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: !isDevelopmentEnvironment, // HTTPS only in production
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+    callbackUrl: {
+      name: `${isDevelopmentEnvironment ? '' : '__Secure-'}next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: !isDevelopmentEnvironment,
+      },
+    },
+    csrfToken: {
+      name: `${isDevelopmentEnvironment ? '' : '__Host-'}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: !isDevelopmentEnvironment,
+      },
+    },
   },
 
   pages: {

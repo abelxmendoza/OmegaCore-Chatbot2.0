@@ -33,6 +33,7 @@ import { createListMemories } from '@/lib/ai/tools/list-memories';
 import { email, readEmails } from '@/lib/ai/tools/email';
 import { calendar } from '@/lib/ai/tools/calendar';
 import { searchMemories } from '@/lib/db/memory';
+import { sanitizeString } from '@/lib/security/sanitize';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -42,12 +43,21 @@ import { geolocation } from '@vercel/functions';
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  // Security: Limit request body size (5MB max)
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > 5 * 1024 * 1024) {
+    return new Response('Request body too large', { status: 413 });
+  }
+
   let requestBody: PostRequestBody;
 
   try {
     const json = await request.json();
+    // Validate with Zod schema (prevents injection attacks)
     requestBody = postRequestBodySchema.parse(json);
-  } catch (_) {
+  } catch (error) {
+    // Don't leak validation errors to client
+    console.error('[Chat API] Validation error:', error);
     return new Response('Invalid request body', { status: 400 });
   }
 
@@ -124,9 +134,12 @@ export async function POST(request: Request) {
     if (hasDatabase && session.user?.id) {
       try {
         // Extract text from user message for memory search
-        const userMessageText = typeof message === 'string' 
+        const rawUserMessageText = typeof message === 'string' 
           ? message 
           : message.parts?.map((p: any) => (typeof p === 'string' ? p : p.text || '')).join(' ') || '';
+        
+        // Security: Sanitize user input before using in queries
+        const userMessageText = sanitizeString(rawUserMessageText, 1000);
         
         if (userMessageText) {
           const relevantMemories = await searchMemories({

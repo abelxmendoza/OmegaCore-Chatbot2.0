@@ -1,9 +1,11 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { sanitizeURL, sanitizeString, sanitizeHTML } from '@/lib/security/sanitize';
 
 /**
  * Web Browser tool - fetches and extracts content from web pages
  * Designed for security research and information gathering
+ * Enhanced with comprehensive security measures
  */
 export const webBrowser = tool({
   description:
@@ -12,6 +14,7 @@ export const webBrowser = tool({
     url: z
       .string()
       .url()
+      .max(2048)
       .describe('The URL to fetch and extract content from (must include http:// or https://)'),
     extractLinks: z
       .boolean()
@@ -22,22 +25,33 @@ export const webBrowser = tool({
       .number()
       .optional()
       .default(10000)
-      .describe('Maximum length of extracted content in characters'),
+      .min(100)
+      .max(100000)
+      .describe('Maximum length of extracted content in characters (100-100000)'),
   }),
   execute: async ({ url, extractLinks = true, maxLength = 10000 }) => {
     try {
+      // Security: Sanitize and validate URL
+      const sanitizedUrl = sanitizeURL(url);
+      if (!sanitizedUrl) {
+        return {
+          error: 'Invalid or unsafe URL. Only http:// and https:// URLs are allowed.',
+          url,
+        };
+      }
+
       // Validate URL scheme
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      if (!sanitizedUrl.startsWith('http://') && !sanitizedUrl.startsWith('https://')) {
         return {
           error: 'Invalid URL scheme. Must start with http:// or https://',
-          url,
+          url: sanitizedUrl,
         };
       }
 
       // Security: Block localhost and private IPs in production
       const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
       if (isProduction) {
-        const urlObj = new URL(url);
+        const urlObj = new URL(sanitizedUrl);
         const hostname = urlObj.hostname.toLowerCase();
         
         // Block localhost and private IP ranges
@@ -63,10 +77,10 @@ export const webBrowser = tool({
           hostname.startsWith('172.30.') ||
           hostname.startsWith('172.31.')
         ) {
-          return {
-            error: 'Access to localhost and private IPs is blocked in production for security',
-            url,
-          };
+        return {
+          error: 'Access to localhost and private IPs is blocked in production for security',
+          url: sanitizedUrl,
+        };
         }
       }
 
@@ -75,7 +89,7 @@ export const webBrowser = tool({
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       try {
-        const response = await fetch(url, {
+        const response = await fetch(sanitizedUrl, {
           signal: controller.signal,
           headers: {
             'User-Agent':
@@ -88,18 +102,19 @@ export const webBrowser = tool({
         if (!response.ok) {
           return {
             error: `HTTP ${response.status}: ${response.statusText}`,
-            url,
+            url: sanitizedUrl,
             status: response.status,
           };
         }
 
         const html = await response.text();
 
-        // Extract title
+        // Extract title and sanitize
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        const title = titleMatch ? titleMatch[1].trim() : 'No title found';
+        const rawTitle = titleMatch ? titleMatch[1].trim() : 'No title found';
+        const title = sanitizeString(sanitizeHTML(rawTitle), 500);
 
-        // Extract main content - remove script and style tags
+        // Extract main content - remove script and style tags, then sanitize
         let textContent = html
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -108,6 +123,9 @@ export const webBrowser = tool({
           .replace(/<[^>]+>/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
+
+        // Sanitize extracted content
+        textContent = sanitizeString(sanitizeHTML(textContent), maxLength);
 
         // Truncate if too long
         if (textContent.length > maxLength) {
@@ -126,8 +144,12 @@ export const webBrowser = tool({
             if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
               try {
                 // Resolve relative URLs
-                const absoluteUrl = new URL(href, url).toString();
-                linkSet.add(absoluteUrl);
+                const absoluteUrl = new URL(href, sanitizedUrl).toString();
+                // Validate resolved URL
+                const validatedUrl = sanitizeURL(absoluteUrl);
+                if (validatedUrl) {
+                  linkSet.add(validatedUrl);
+                }
               } catch {
                 // Invalid URL, skip
               }
@@ -139,7 +161,7 @@ export const webBrowser = tool({
 
         return {
           success: true,
-          url,
+          url: sanitizedUrl,
           title,
           content: textContent,
           links: extractLinks ? links : undefined,
@@ -159,9 +181,11 @@ export const webBrowser = tool({
         throw fetchError;
       }
     } catch (error: unknown) {
+      // Don't leak sensitive error details
+      console.error('[Web Browser] Error:', error);
       return {
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        url,
+        error: 'Failed to fetch URL. Please check the URL and try again.',
+        url: sanitizedUrl || url,
       };
     }
   },
