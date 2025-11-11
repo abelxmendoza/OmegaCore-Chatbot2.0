@@ -32,6 +32,7 @@ import { createForget } from '@/lib/ai/tools/forget';
 import { createListMemories } from '@/lib/ai/tools/list-memories';
 import { email, readEmails } from '@/lib/ai/tools/email';
 import { calendar } from '@/lib/ai/tools/calendar';
+import { systemSecurity } from '@/lib/ai/tools/system-security';
 import { searchMemories } from '@/lib/db/memory';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
               ? []
-              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions', 'webBrowser', 'shellExec', 'remember', 'forget', 'listMemories', 'email', 'readEmails', 'calendar'],
+              : ['getWeather', 'calculator', 'getTime', 'createDocument', 'updateDocument', 'requestSuggestions', 'webBrowser', 'shellExec', 'remember', 'forget', 'listMemories', 'email', 'readEmails', 'calendar', 'systemSecurity'],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
@@ -201,6 +202,7 @@ export async function POST(request: Request) {
             email,
             readEmails,
             calendar,
+            systemSecurity,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id && hasDatabase) {

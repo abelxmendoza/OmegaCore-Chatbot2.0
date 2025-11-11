@@ -24,6 +24,7 @@ A cutting-edge AI chatbot platform built with Next.js and the AI SDK, designed f
 - **Memory Management**: Remember, forget, and search through stored memories
 - **Email Integration**: Send emails directly from the chat interface
 - **Calendar Integration**: Create and manage calendar events
+- **System Security**: Perform security checks (updates, permissions, network, processes)
 - **Command Palette**: Quick access to tools and commands (⌘K)
 
 ### LLM Providers

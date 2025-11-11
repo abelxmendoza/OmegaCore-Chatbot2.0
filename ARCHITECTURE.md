@@ -73,6 +73,7 @@ This is where you surpass base ChatGPT:
 - ✅ **Shell execution** (controlled sandbox with security safeguards)
 - ✅ **Email integration** (send emails, placeholder for reading)
 - ✅ **Calendar integration** (create and manage calendar events)
+- ✅ **System security checks** (updates, permissions, network, processes, files)
 - 🔄 **Future**: Robotics control, full email/calendar API integration
 
 ---
